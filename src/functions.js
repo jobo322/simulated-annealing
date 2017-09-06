@@ -1,5 +1,5 @@
-import Matrix from "ml-matrix";
-import SD from "spectra-data";
+const Matrix = require("ml-matrix");
+const SD = require("spectra-data");
 
 module.exports.couplingIndexesGenerator = function(sortPrediction) {
     let couplingMatrixIndexes = [];

@@ -1,4 +1,4 @@
-import Matrix from "ml-matrix";
+const Matrix = require("ml-matrix");
 
 function simulatedAnnealing(inputs) {
     var {
