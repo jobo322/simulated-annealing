@@ -194,19 +194,19 @@ module.exports.initialParametersGenerator = function(sortPrediction) {
     return [initialSpectraParameters,lowerBound, upperBound];
 };// Function to generate the guess values.
 
-module.exports.bounds = function(spectraParameters){
-    let ChemicalShiftsInitialError = alfa * spectraProperties.lineWidth / 400;
-    let CouplingConstantsInitialError = beta;
+module.exports.bounds = function(spectraParameters, index){
+    let ChemicalShiftsInitialError = alfa * boundsRangesLengthDecreasing[index];
+    let CouplingConstantsInitialError = beta * boundsRangesLengthDecreasing[index];
     let chemicalShiftsValues = spectraParameters[0].slice(0,range.signals);
     let couplingConstantsValues = spectraParameters[0].slice(range.signals);
-    let chemicalShiftsLowerBound = chemicalShiftsValues.map(x => x - ChemicalShiftsInitialError);
-    let chemicalShiftsUpperBound = chemicalShiftsValues.map(x => x + ChemicalShiftsInitialError);
+    let chemicalShiftsLowerBound = chemicalShiftsValues.map(x => x - ChemicalShiftsInitialError );
+    let chemicalShiftsUpperBound = chemicalShiftsValues.map(x => x + ChemicalShiftsInitialError );
     let couplingConstantsLowerBound = couplingConstantsValues.map(x => x - CouplingConstantsInitialError);
     let couplingConstantsUpperBound = couplingConstantsValues.map(x => x + CouplingConstantsInitialError);
     let lowerBound = Matrix.rowVector(chemicalShiftsLowerBound.concat(couplingConstantsLowerBound));
     let upperBound = Matrix.rowVector(chemicalShiftsUpperBound.concat(couplingConstantsUpperBound));
     return [lowerBound, upperBound]
-};
+}
 
 module.exports.transformationBase = function(frequencies, centralFrequency, width) {
     let lowerBoundIndexValue = frequencies.indexOf(centralFrequency - (width / 2));
