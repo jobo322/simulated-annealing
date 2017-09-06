@@ -10,7 +10,7 @@ Metaheuristic optimization method
 
 ## Installation
 
-`$ npm install ml-simulated-annealing`
+`$ npm install simulated-annealing`
 
 ## [API Documentation](https://mljs.github.io/simulated-annealing/)
 
