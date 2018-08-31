@@ -1,61 +1,56 @@
-const Matrix = require("ml-matrix");
 
-function simulatedAnnealing(inputs) {
-    var {
-        objetiveFunction,
-        guess,
-        lowerBound,
-        upperBound,
-        iterationsNumber,
-        quenchingFactor,
-        toleranceValue
-    } = inputs;
-
-    let boundsDiff = upperBound.clone().subtract(lowerBound);
-    let x = guess;
-    let fx = objetiveFunction(x);
-    let xi = x;
-    let fi = fx;
-    let initialErrorFunctionValue = fi;
-    let acceptableError = initialErrorFunctionValue * 0.1;
-    let j = 0;
-    for (let k = 0; k < iterationsNumber; k++) {
-        let ti =   Math.pow(k / iterationsNumber, quenchingFactor);
-        let mu = Math.pow(10, ti*100 );
-        let dx = muInv(Matrix.rand(x.rows, x.columns).multiply(2).add(-1), mu).multiply(boundsDiff);
-        let x1 = x.clone().add(dx);
-        for (let i = 0; i < x1.columns; i ++) {
-            x1[0][i] = (x1[0][i] < lowerBound[0][i] ? lowerBound[0][i] : 0) +
-            (lowerBound[0][i] <= x1[0][i] && x1[0][i] <= upperBound[0][i] ? x1[0][i] : 0) +
-            (upperBound[0][i] < x1[0][i] ? upperBound[0][i] : 0);
-        }
-        let fx1 = objetiveFunction(x1);
-        let df = fx1 - fx;
-        if(df < 0 || Math.random < Math.random < (Math.exp((-ti * df) / (Math.abs(fx) + 8E-12) / toleranceValue))) {
-            for (var i = 0; i < x.columns; i++) {
-                x[0][i] = x1[0][i];
-            }
-            fx = fx1;
-        }
-        if(fx < fi) {
-            fi = fx1;
-            for (let i = 0; i < x.columns; i++) {
-                xi[0][i] = x[0][i];
-            }
-        }
-        if(fi < acceptableError) {
-            k = iterationsNumber;
-        }
-    }
-    return [xi, fi];
-}
-
-function muInv(y, mu){
-    let x = Matrix.zeros(y.rows, y.columns);
-    for (let i = 0; i < y.columns; i++) {
-        x[0][i] = (((Math.pow(1 + mu, Math.abs(y[0][i])) - 1 ) / mu)) * Math.sign(y[0][i]);
-    }
-    return x;
-}
 
 module.exports = simulatedAnnealing;
+
+function simulatedAnnealing(inputs){
+    let testInfo = {temperatureList : [],dfList :[], optimumList: [],probabilityList : [], errorList : [], currentList : [], dxList: [], candidateList: []};
+    let current = inputs.guess, range = inputs.neighbour.upperBound.map((x,i) => x - inputs.neighbour.lowerBound[i]);
+    let globalOptimum = inputs.goalFunction(current), optimum, optimumCandidate;
+    for (let iteration = 0; iteration < inputs.maxIterations; iteration++){
+        let T = temperature(inputs.maxIterations, iteration);
+        let [candidate, information]  = candidateGenerator(inputs.neighbour, range, current, T, inputs.quenchingFactor);
+        let candidateEvaluation = inputs.goalFunction(candidate)
+        let df = candidateEvaluation - globalOptimum;
+        if (df < 0){ 
+            current = candidate;
+            optimum = candidateEvaluation;
+            globalOptimum = candidateEvaluation
+            optimumCandidate = candidate;
+        }
+        else if (acceptableProbability(df, T,inputs.quenchingFactor) > Math.random()){
+            current = candidate;
+            optimum = candidateEvaluation;
+        }
+        let probability = (df < 0 ? NaN : acceptableProbability(df, T,inputs.quenchingFactor))//only for test *** the NaN represent that the probability is only generated when df > 0 *** 
+        testInfo.temperatureList[iteration] = T;
+        testInfo.currentList[iteration] = current;
+        testInfo.dxList[iteration] = information.dx;
+        testInfo.candidateList[iteration] = information.parameters;
+        testInfo.dfList[iteration] = df;
+        testInfo.probabilityList[iteration] = probability;
+    }
+    return [optimumCandidate, globalOptimum, testInfo];
+}
+function acceptableProbability(functionDelta, temperature, quenchingFactor){
+    let probability = Math.exp( - ( functionDelta * quenchingFactor ) / (temperature)); 
+    return probability
+}
+function candidateGenerator(neighbour,range, current, T, quienching){
+    
+    let dx = [], infoToTest = { yList : [], dx:undefined , parameters : undefined };
+    let newCandidate = [];
+    for (let i = 0; i < current.length; i++) {
+        let y = Math.random() * (range) + neighbour.lowerBound[i];
+        infoToTest.yList[i] = y;
+        dx[i] = y  * Math.exp(-quienching/ T) 
+        newCandidate[i] = current[i] + dx[i];
+        newCandidate[i] = (newCandidate[i] < neighbour.lowerBound[i] ? neighbour.lowerBound[i] + (neighbour.lowerBound[i] - newCandidate)  : 0) + (neighbour.lowerBound[i] <= newCandidate[i] && newCandidate[i] <= neighbour.upperBound[i] ? newCandidate[i] : 0) + (neighbour.upperBound[i] < newCandidate[i] ? neighbour.upperBound[i] - (newCandidate[i] - neighbour.upperBound[i]) : 0);
+    } 
+    infoToTest.dx = dx;
+    infoToTest.parameters = newCandidate;
+    return [newCandidate, infoToTest];
+}
+function temperature(maxIteration, iteration){
+    let T = maxIteration / iteration * 0.1 + 1 ;
+    return T;
+};
